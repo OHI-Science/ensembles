@@ -51,9 +51,9 @@ d_slope <- reshape2::dcast(ram_sum, stockid + scientificname ~ method,
   inner_join(spec_ram_wide)
 
 # bring in the simulation formatted data to build the simulation-trained models:
-d_mean_sim <- readRDS("generated-data/sim-mean-dat.rds")
+d_mean_sim <- readRDS("generated-data/sim-mean-dat.rds") ##THis is the model we want to run (JA)
 m_rf <- randomForest::randomForest(
-  log(bbmsy_true_mean) ~ CMSY + COMSIR + mPRM + SSCOM,
+  log(bbmsy_true_mean) ~ CMSY + COMSIR + mPRM + SSCOM, ##start by removing mPRM until we get a better handle on it (JA)
     # spec_freq_0.05 + spec_freq_0.2,
   data = d_mean_sim, ntree = 1000L)
 
@@ -79,6 +79,9 @@ dev.off()
 
 # load the RAM data formatted for mPRM:
 ram_prm_dat <- readRDS("generated-data/ram_prm_dat.rds")
+
+## Load the SAUP data and format for mPRM
+
 
 # Apply the simulation ensembles to a cross-validated version of the RAM dataset:
 cv_ensemble_ram <- function(nfold = 3L, .n = 1L) {
@@ -165,7 +168,11 @@ cv_ensemble_ram <- function(nfold = 3L, .n = 1L) {
       stopifnot(identical(length(test_ids), nrow(d_test)))
 
       # now extrapolate with the ensemble models and return the whole data frame
-      d_test$rf_ensemble <- exp(predict(m_rf, newdata = d_test))
+      d_test$rf_ensemble <- exp(predict(m_rf, newdata = d_test))  ##THIS IS WHAT WE NEED TO RUN (make sure our data is identical in format to d_test)
+
+      ## See how the outputs compare to our RAM database, and if it doesn't correlate still this is
+      ## not our problem. (JA)
+
       d_test$gbm_ensemble <- exp(predict(m_gbm, newdata = d_test, n.trees = m_gbm$n.trees))
       geo_mean <- TRUE
       individual_models <- c("CMSY", "COMSIR", "mPRM", "SSCOM")
@@ -184,9 +191,10 @@ cv_ensemble_ram <- function(nfold = 3L, .n = 1L) {
 }
 
 library("doParallel")
-registerDoParallel(cores = 2L) # often crashes on more cores
+registerDoParallel(cores = parallel::detectCores())
+.parallel <- ifelse(Sys.info()[["sysname"]] == "Windows", FALSE, TRUE)
 qq <- plyr::ldply(seq_len(100L), function(i) cv_ensemble_ram(nfold = 3L, .n = i),
-  .parallel = TRUE)
+  .parallel = .parallel)
 
 d_mean_long <- qq %>%
   select(-spec_freq_0.05, -spec_freq_0.2) %>%
