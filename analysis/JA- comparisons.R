@@ -35,6 +35,7 @@ ram_fits <- rename(ram_fits, tsyear = year)
 ################################################################################################
 library(tidyr)
 library(reshape2)
+library(dplyr)
 ram_outputs <- readRDS("generated-data/ram-ensemble-predicted.rds")%>%
                 mutate(method = as.character(method))%>% #dealign with factors
               mutate(bbmsy_est = as.numeric(bbmsy_est))
@@ -49,7 +50,9 @@ ram_data <- ram_outputs%>%
                                  "mean_ensemble","lm_ensemble")) %>%
             group_by(stockid, bbmsy_true,method)%>%
             summarize(mean = mean(bbmsy_est,na.rm=T))%>%
-            spread(method, mean)
+            filter(bbmsy_true<=2.55)%>% #constraining to 2.55 since all B/Bmsy values at or above 2.55 are given the same score
+            spread(method, mean)%>%
+            filter
 
 ggplotRegression <- function (fit) {
 
