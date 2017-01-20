@@ -53,7 +53,7 @@ d_slope <- reshape2::dcast(ram_sum, stockid + scientificname ~ method,
 # bring in the simulation formatted data to build the simulation-trained models:
 d_mean_sim <- readRDS("generated-data/sim-mean-dat.rds") ##THis is the model we want to run (JA)
 m_rf <- randomForest::randomForest(
-  log(bbmsy_true_mean) ~ CMSY + COMSIR + mPRM + SSCOM, ##start by removing mPRM until we get a better handle on it (JA)
+  log(bbmsy_true_mean) ~ CMSY + COMSIR + mPRM + SSCOM,
     # spec_freq_0.05 + spec_freq_0.2,
   data = d_mean_sim, ntree = 1000L)
 
